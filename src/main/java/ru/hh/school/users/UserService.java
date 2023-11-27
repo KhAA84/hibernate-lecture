@@ -10,8 +10,9 @@ public class UserService {
   private final TransactionHelper th;
 
   public UserService(
-          SessionFactory sessionFactory,
-          UserDao userDao) {
+    SessionFactory sessionFactory,
+    UserDao userDao
+  ) {
     this.userDao = userDao;
     this.th = new TransactionHelper(sessionFactory);
   }
@@ -42,12 +43,11 @@ public class UserService {
 
   public void changeFullName(int userId, String firstName, String lastName) {
     th.inTransaction(() -> {
-      final User user = userDao.getBy(userId).orElse(null);
-      if (user == null){
-        return;
-      }
-      user.setFirstName(firstName);
-      user.setLastName(lastName);
+      userDao.getBy(userId)
+          .ifPresent(user -> {
+            user.setFirstName(firstName);
+            user.setLastName(lastName);
+          });
       // хибер отслеживает изменения сущностей и выполняет sql update перед коммитом транзакции
     });
   }
