@@ -1,4 +1,4 @@
-package ru.hh.school.users;
+package ru.hh.school.users.user;
 
 import java.util.Objects;
 
@@ -28,11 +28,11 @@ public class User {
     return lastName;
   }
 
-  void setFirstName(String name) {
+  public void setFirstName(String name) {
     this.firstName = name;
   }
 
-  void setLastName(String lastName) {
+  public void setLastName(String lastName) {
     this.lastName = lastName;
   }
 

@@ -11,6 +11,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import ru.hh.school.TestHelper;
+import ru.hh.school.users.user.User;
+import ru.hh.school.users.user.UserDao;
+import ru.hh.school.users.user.UserService;
 
 import javax.persistence.PersistenceException;
 import java.io.IOException;

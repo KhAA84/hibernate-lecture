@@ -1,4 +1,4 @@
-package ru.hh.school.users;
+package ru.hh.school.users.resume;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;

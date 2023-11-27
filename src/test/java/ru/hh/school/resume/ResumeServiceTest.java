@@ -10,13 +10,11 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import ru.hh.school.TestHelper;
-import ru.hh.school.users.*;
+import ru.hh.school.users.resume.Resume;
+import ru.hh.school.users.resume.ResumeDao;
+import ru.hh.school.users.resume.ResumeService;
 
 import java.io.IOException;
-import java.util.Optional;
-import java.util.Set;
-
-import static org.junit.Assert.*;
 
 public class ResumeServiceTest {
 
