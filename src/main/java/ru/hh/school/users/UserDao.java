@@ -73,7 +73,7 @@ public class UserDao {
   public void deleteBy(int userId) {
     try (Connection connection = dataSource.getConnection()) {
 
-      try(PreparedStatement statement = connection.prepareStatement(
+      try (PreparedStatement statement = connection.prepareStatement(
         "DELETE FROM hhuser WHERE user_id = ?")) {
 
         statement.setInt(1, userId);
@@ -93,10 +93,11 @@ public class UserDao {
       throw new IllegalArgumentException("can not update " + user + " without id");
     }
 
-    try(Connection connection = dataSource.getConnection()) {
+    try (Connection connection = dataSource.getConnection()) {
 
-      try (PreparedStatement statement = connection.prepareStatement(
-        "")) {
+      try (
+        PreparedStatement statement = connection.prepareStatement("")
+      ) {
 
         //TODO:
         //реализовать установку параметров и вызов запроса
