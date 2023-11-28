@@ -41,6 +41,11 @@ public class UserDao {
     //TODO: implement
   }
 
+//  public User getUserByIdWithResumes(int id) {
+//    return session().createQuery("select u from User u join fetch u.resumes", User.class)
+//        .uniqueResult();
+//  }
+
   private Session session() {
     return sessionFactory.getCurrentSession();
   }
