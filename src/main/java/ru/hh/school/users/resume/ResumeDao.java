@@ -22,6 +22,14 @@ public class ResumeDao {
     return Optional.ofNullable(session().get(Resume.class, id));
   }
 
+  public Resume getResumeWithUserById(int id) {
+    return session().createQuery(
+            "select r from Resume r join fetch r.user where r.id = :id"
+            , Resume.class)
+        .setParameter("id", id)
+        .uniqueResult();
+  }
+
   public Set<Resume> getActiveResumesForUserId(int userId) {
     // TODO: implemetation
     return new HashSet<>();

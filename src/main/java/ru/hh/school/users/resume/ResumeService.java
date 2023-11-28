@@ -29,6 +29,10 @@ public class ResumeService {
         return th.inTransaction(() -> resumeDao.getActiveResumesForUserId(userId));
     }
 
+    public Resume getResumeWithUserById(int resumeId) {
+        return th.inTransaction(() -> resumeDao.getResumeWithUserById(resumeId));
+    }
+
     public void deleteAll() {
         th.inTransaction(resumeDao::deleteAll);
     }
