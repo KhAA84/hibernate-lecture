@@ -6,7 +6,6 @@ import org.hibernate.SessionFactory;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class ResumeDao {
   private final SessionFactory sessionFactory;
@@ -24,8 +23,12 @@ public class ResumeDao {
   }
 
   public Set<Resume> getActiveResumesForUserId(int userId) {
-    // TODO: implement
+    // TODO: implemetation
     return new HashSet<>();
+  }
+
+  public void deleteAll() {
+    session().createQuery("delete from Resume").executeUpdate();
   }
 
   private Session session() {
