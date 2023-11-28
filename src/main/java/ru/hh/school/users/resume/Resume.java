@@ -23,6 +23,8 @@ public class Resume {
 
   private String description;
 
+  private boolean active;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id")
   private User user;
@@ -35,6 +37,15 @@ public class Resume {
 
   public void setDescription(String description) {
     this.description = description;
+  }
+
+
+  public boolean isActive() {
+    return active;
+  }
+
+  public void setActive(boolean active) {
+    this.active = active;
   }
 
   public void setUser(User user) {
