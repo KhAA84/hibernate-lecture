@@ -21,6 +21,7 @@ import ru.hh.school.users.user.UserDao;
 import ru.hh.school.users.user.UserService;
 
 import java.io.IOException;
+import java.util.Set;
 
 import static org.junit.Assert.assertFalse;
 
@@ -30,6 +31,7 @@ public class RelationsTest {
   private static UserDao userDao;
   private static UserService userService;
   private static ResumeService resumeService;
+  private static SessionFactory sessionFactory;
   private static TransactionHelper th;
 
   private static EmbeddedPostgres embeddedPostgres = null;
@@ -46,6 +48,7 @@ public class RelationsTest {
 
     SessionFactory sessionFactory = createSessionFactory();
 
+    RelationsTest.sessionFactory = sessionFactory;
     resumeDao = new ResumeDao(sessionFactory);
     userDao = new UserDao(sessionFactory);
     th = new TransactionHelper(sessionFactory);
@@ -135,6 +138,24 @@ public class RelationsTest {
       Resume resume = resumeDao.getBy(1).get();
 
       assertFalse(resume.getUser().getLastName().isEmpty());
+    });
+  }
+
+  @Test
+  public void getResumeNPlusOne() {
+    insert_users();
+
+    userService.getAll().forEach(user -> {
+      Resume resume = createResume(user, "Java Dev", true);
+      resumeService.saveNew(resume);
+    });
+
+    th.inTransaction(() -> {
+      Set<Resume> resumes = resumeDao.getAll();
+
+      resumes.forEach(
+          resume -> assertFalse(resume.getUser().getLastName().isEmpty())
+      );
     });
   }
 

@@ -6,6 +6,7 @@ import org.hibernate.SessionFactory;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ResumeDao {
   private final SessionFactory sessionFactory;
@@ -33,6 +34,12 @@ public class ResumeDao {
   public Set<Resume> getActiveResumesForUserId(int userId) {
     // TODO: implemetation
     return new HashSet<>();
+  }
+
+  public Set<Resume> getAll() {
+    return session().createQuery("select r from Resume r", Resume.class)
+        .getResultStream()
+        .collect(Collectors.toSet());
   }
 
   public void deleteAll() {
