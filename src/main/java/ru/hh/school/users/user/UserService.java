@@ -1,6 +1,7 @@
 package ru.hh.school.users.user;
 
 import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import ru.hh.school.users.TransactionHelper;
 
 import java.util.Optional;
@@ -10,6 +11,7 @@ public class UserService {
 
   private final UserDao userDao;
   private final TransactionHelper th;
+  private final SessionFactory sessionFactory;
 
   public UserService(
     SessionFactory sessionFactory,
@@ -17,6 +19,7 @@ public class UserService {
   ) {
     this.userDao = userDao;
     this.th = new TransactionHelper(sessionFactory);
+    this.sessionFactory = sessionFactory;
   }
 
   public Set<User> getAll() {
@@ -28,7 +31,15 @@ public class UserService {
   }
 
   public void saveNew(User user) {
-    th.inTransaction(() -> userDao.saveNew(user));
+    Transaction transaction = sessionFactory.getCurrentSession().getTransaction();
+    transaction.begin();
+    try {
+      userDao.saveNew(user);
+      transaction.commit();
+    } catch (RuntimeException e) {
+      transaction.rollback();
+      throw e;
+    }
   }
 
   public Optional<User> getBy(int userId) {
