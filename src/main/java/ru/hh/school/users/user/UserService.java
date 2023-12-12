@@ -1,5 +1,6 @@
 package ru.hh.school.users.user;
 
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import ru.hh.school.users.TransactionHelper;
@@ -31,7 +32,8 @@ public class UserService {
   }
 
   public void saveNew(User user) {
-    Transaction transaction = sessionFactory.getCurrentSession().getTransaction();
+    Session session = sessionFactory.getCurrentSession();
+    Transaction transaction = session.getTransaction();
     transaction.begin();
     try {
       userDao.saveNew(user);
@@ -39,6 +41,8 @@ public class UserService {
     } catch (RuntimeException e) {
       transaction.rollback();
       throw e;
+    } finally {
+      session.close();
     }
   }
 
