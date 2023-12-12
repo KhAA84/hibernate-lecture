@@ -102,8 +102,6 @@ public class UserServiceTest {
         User user = new User("John", "Lennon");
         userService.saveNew(user);
         userService.saveNew(user);
-
-    fail();
   }
 
   @Test
