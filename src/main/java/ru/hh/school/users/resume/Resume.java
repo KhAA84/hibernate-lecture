@@ -11,6 +11,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import java.util.Objects;
 
 @Entity
 @Table(name = "resume")
@@ -62,5 +63,22 @@ public class Resume {
 
   public User getUser() {
     return user;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    Resume resume = (Resume) o;
+
+    if (active != resume.active) return false;
+    if (!Objects.equals(id, resume.id)) return false;
+    return Objects.equals(description, resume.description);
+  }
+
+  @Override
+  public int hashCode() {
+    return id != null ? id.hashCode() : 0;
   }
 }
