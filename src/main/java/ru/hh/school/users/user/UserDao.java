@@ -42,7 +42,10 @@ public class UserDao {
   }
 
 //  public User getUserByIdWithResumes(int id) {
-//    return session().createQuery("select u from User u join fetch u.resumes", User.class)
+//    return session().createQuery(
+//        "select u from User u join u.resumes where u.id=:id"
+//            , User.class)
+//        .setParameter("id", id)
 //        .uniqueResult();
 //  }
 
