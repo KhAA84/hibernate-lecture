@@ -1,33 +1,53 @@
 package ru.hh.school.users;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
-import com.opentable.db.postgres.embedded.EmbeddedPostgres;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.postgresql.ds.PGSimpleDataSource;
 
-import java.io.IOException;
-import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 public class UserDaoTest {
 
   private static UserDao userDao;
   private static PGSimpleDataSource ds;
+  private static final PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:latest")
+      .withDatabaseName("test")
+      .withUsername("test")
+      .withPassword("test")
+      .waitingFor(Wait.forListeningPort());
 
-  @Before
+
+
+    @BeforeAll
+    public static void setUpDataSource() {
+      postgreSQLContainer.start();
+      ds = new PGSimpleDataSource();
+      ds.setServerNames(new String[]{postgreSQLContainer.getHost()});
+      ds.setDatabaseName(postgreSQLContainer.getDatabaseName());
+      ds.setUser(postgreSQLContainer.getUsername());
+      ds.setPassword(postgreSQLContainer.getPassword());
+      ds.setPortNumbers(new int[]{postgreSQLContainer.getMappedPort(5432)});
+      userDao = new UserDao(ds);
+      TestHelper.executeScript(ds, "create_hhuser.sql");
+    }
+
+
+  @BeforeEach
   public void cleanUpDb() {
     userDao.deleteAll();
   }
 
   @Test
-  public void getAllUsersShouldReturnTwoEnyties() {
+  public void getAllUsersShouldReturnTwoEntities() {
     TestHelper.executeScript(ds, "insert_some_users.sql");
     Set<User> users = userDao.getAll();
     assertEquals(2, users.size());
@@ -45,13 +65,11 @@ public class UserDaoTest {
     assertEquals(Set.of(user), userDao.getAll());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void savingOfExistingUserShouldBePrevented() {
     User user = User.newUser("John", "Lennon");
     userDao.saveNew(user);
-    userDao.saveNew(user);
-
-    fail();
+    assertThrows(IllegalArgumentException.class, () -> userDao.saveNew(user));
   }
 
   @Test
@@ -85,12 +103,10 @@ public class UserDaoTest {
     assertFalse(extractedUser.isPresent());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void updateShouldThrowExceptionForNewUsers() {
     User user = User.newUser("John", "Lennon");
-    userDao.update(user);
-
-    fail();
+    assertThrows(IllegalArgumentException.class, () -> userDao.update(user));
   }
 
   @Test
@@ -107,24 +123,6 @@ public class UserDaoTest {
     );
   }
 
-  @BeforeClass
-  public static void setUpDatasource() {
-    try {
-      EmbeddedPostgres.builder()
-          .setPort(5433)
-          .start();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-
-    ds = new PGSimpleDataSource();
-    ds.setUser("postgres");
-    ds.setPassword("postgres");
-    ds.setUrl("jdbc:postgresql://localhost:5433/postgres");
-    userDao = new UserDao(ds);
-
-    TestHelper.executeScript(ds, "create_hhuser.sql");
-  }
 
 
 }

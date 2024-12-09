@@ -19,15 +19,34 @@ public class UserDao {
   }
 
   public Set<User> getAll() {
-    // TODO Implement
-    return null;
+    // todo: realisation
+    return Set.of();
   }
 
   public void saveNew(User user) {
     if (user.getId() != null) {
       throw new IllegalArgumentException("User " + user + " already exists");
     }
-    // TODO Implement om prepared statement
+    try (Connection connection = dataSource.getConnection()) {
+      try (PreparedStatement statement = connection.prepareStatement("INSERT INTO hhuser (first_name, last_name) VALUES (?, ?)",
+       Statement.RETURN_GENERATED_KEYS)) {
+        statement.setString(1, user.getFirstName());
+        statement.setString(2, user.getLastName());
+        int affectedRows = statement.executeUpdate();
+        if (affectedRows == 0) {
+          throw new IllegalArgumentException("User " + user + " was not created");
+        }
+        try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+          if (generatedKeys.next()) {
+            user.setId(generatedKeys.getInt(1));
+          } else {
+            throw new SQLException("Creating user failed, no ID generated");
+          }
+        }
+      }
+    } catch (SQLException e) {
+      throw new RuntimeException("Can't insert new user", e);
+    }
   }
 
   public void deleteAll() {
@@ -78,9 +97,7 @@ public class UserDao {
 
         statement.setInt(1, userId);
 
-        // TODO: нужное раскомментить
-//        statement.executeUpdate();
-//        statement.executeQuery();
+        statement.executeUpdate();
       }
 
     } catch (SQLException e) {
@@ -96,17 +113,18 @@ public class UserDao {
     try (Connection connection = dataSource.getConnection()) {
 
       try (
-        PreparedStatement statement = connection.prepareStatement("")
+        PreparedStatement statement = connection.prepareStatement(
+            "update hhuser set first_name = ?, last_name = ? where user_id = ?"
+        )
       ) {
-
-        //TODO:
-        //реализовать установку параметров и вызов запроса
+        statement.setString(1, user.getFirstName());
+        statement.setString(2, user.getLastName());
+        statement.setInt(3, user.getId());
+        statement.executeUpdate();
       }
 
     } catch (SQLException e) {
       throw new RuntimeException("failed to update " + user, e);
     }
   }
-
-
 }
