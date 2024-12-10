@@ -1,5 +1,6 @@
 package ru.hh.school.users.user;
 
+import java.util.stream.Collectors;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
@@ -19,8 +20,13 @@ public class UserDao {
     return null;
   }
 
+  //region already implemented methods
+
   public void saveNew(User user) {
-    //TODO: implement
+    session().persist(user);
+    // или session().merge()
+    // save вставляет новую строчку в БД, даже если у user уже есть id
+    // persist при этом бросает исключение
   }
 
   public Optional<User> getBy(int id) {
@@ -30,24 +36,30 @@ public class UserDao {
   }
 
   public void deleteBy(int id) {
-    //TODO: implement
+    session().createMutationQuery("delete from User u where u.id = :userId")
+        .setParameter("userId", id)
+        .executeUpdate();
   }
 
   public void deleteAll() {
-    session().createQuery("delete from User").executeUpdate();
+    session().createMutationQuery("delete from User").executeUpdate();
   }
 
   public void update(User user) {
-    //TODO: implement
+    session().merge(user);
   }
 
+  //region relations demo (
 //  public User getUserByIdWithResumes(int id) {
 //    return session().createQuery(
-//        "select u from User u join u.resumes where u.id=:id"
+//        "select u from User u join fetch u.resumes where u.id=:id"
 //            , User.class)
 //        .setParameter("id", id)
 //        .uniqueResult();
 //  }
+  //endregion
+
+  //endregion
 
   private Session session() {
     return sessionFactory.getCurrentSession();

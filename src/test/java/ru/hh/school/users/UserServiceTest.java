@@ -1,89 +1,87 @@
 package ru.hh.school.users;
 
-import com.opentable.db.postgres.embedded.EmbeddedPostgres;
+import jakarta.persistence.EntityExistsException;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.service.ServiceRegistry;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import ru.hh.school.TestHelper;
+import ru.hh.school.users.resume.Resume;
 import ru.hh.school.users.user.User;
 import ru.hh.school.users.user.UserDao;
 import ru.hh.school.users.user.UserService;
 
-import javax.persistence.PersistenceException;
-import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.junit.Assert.*;
 
 public class UserServiceTest {
 
   private static UserService userService;
-  private static EmbeddedPostgres embeddedPostgres = null;
+  private static SessionFactory sessionFactory;
+  private static final PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:latest")
+      .withDatabaseName("test")
+      .withUsername("test")
+      .withPassword("test")
+      .waitingFor(Wait.forListeningPort());
 
 
-  @BeforeClass
+  @BeforeAll
   public static void setUp() {
-    try {
-      embeddedPostgres = EmbeddedPostgres.builder()
-          .setPort(5433)
-          .start();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-    SessionFactory sessionFactory = createSessionFactory();
+    postgreSQLContainer.start();
+    sessionFactory = createSessionFactory();
 
     userService = new UserService(
         sessionFactory,
         new UserDao(sessionFactory)
     );
-
-    if (embeddedPostgres != null) {
-      TestHelper.executeScript(embeddedPostgres.getPostgresDatabase(), "create_hhuser.sql");
-    }
   }
 
-  @AfterClass
+  @AfterAll
   public static void shutdown() {
-    try {
-      embeddedPostgres.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+    postgreSQLContainer.close();
   }
 
   private static SessionFactory createSessionFactory() {
     ServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder()
         .loadProperties("hibernate.properties")
+        .applySetting("hibernate.connection.url", postgreSQLContainer.getJdbcUrl())
+        .applySetting("hibernate.connection.username", postgreSQLContainer.getUsername())
+        .applySetting("hibernate.connection.password", postgreSQLContainer.getPassword())
         .build();
 
     Metadata metadata = new MetadataSources(serviceRegistry)
         // add class
         .addAnnotatedClass(User.class)
+//        .addAnnotatedClass(Resume.class)
         .buildMetadata();
 
     return metadata.buildSessionFactory();
   }
 
 
-  @Before
+  @BeforeEach
   public void cleanUpDb() {
     userService.deleteAll();
   }
 
   public void insert_users() {
-    TestHelper.executeScript(embeddedPostgres.getPostgresDatabase(), "insert_hhusers.sql");
+    TestHelper.executeScript(sessionFactory, "insert_hhusers.sql");
   }
 
   @Test
-  public void getAllUsersShouldReturnEmptySet() {
+  void getAllUsersShouldReturnEmptySet() {
     insert_users();
     final Set<User> all = userService.getAll();
     assertEquals(2, all.size());
@@ -91,21 +89,21 @@ public class UserServiceTest {
   }
 
   @Test
-  public void saveNewUserShouldInsertDbRow() {
+  void saveNewUserShouldInsertDbRow() {
     User user = new User("John", "Lennon");
     userService.saveNew(user);
     assertEquals(Set.of(user), userService.getAll());
   }
 
-    @Test(expected = PersistenceException.class)
-    public void savingOfExistingUserShouldBePrevented() {
-        User user = new User("John", "Lennon");
-        userService.saveNew(user);
-        userService.saveNew(user);
+  @Test
+  void savingOfExistingUserShouldBePrevented() {
+    User user = new User("John", "Lennon");
+    userService.saveNew(user);
+    assertThrows(EntityExistsException.class, () -> userService.saveNew(user));
   }
 
   @Test
-  public void updateFirstNameShouldSucceed() {
+  void updateFirstNameShouldSucceed() {
     User user = new User("John", "Lennon");
     userService.saveNew(user);
     userService.changeFullName(user.getId(), "Paul", "McCartney");
@@ -117,7 +115,7 @@ public class UserServiceTest {
   }
 
   @Test
-  public void getByIdShouldReturnUserIfRowExists() {
+  void getByIdShouldReturnUserIfRowExists() {
     User user = new User("John", "Lennon");
     userService.saveNew(user);
 
@@ -129,12 +127,12 @@ public class UserServiceTest {
 
 
   @Test
-  public void getByIdShouldReturnEmptyIfRowDoesntExist() {
+  void getByIdShouldReturnEmptyIfRowDoesntExist() {
     assertFalse(userService.getBy(-1).isPresent());
   }
 
   @Test
-  public void deleteUserShouldDeleteDbRow() {
+  void deleteUserShouldDeleteDbRow() {
     User user = new User("John", "Lennon");
     userService.saveNew(user);
 
@@ -148,7 +146,7 @@ public class UserServiceTest {
   }
 
   @Test
-  public void updateShouldUpdateDbRowOfExistingUser() {
+  void updateShouldUpdateDbRowOfExistingUser() {
     User user = new User("Ringo", "Lennon");
     userService.saveNew(user);
 

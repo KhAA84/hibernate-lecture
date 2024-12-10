@@ -1,66 +1,68 @@
 package ru.hh.school.resume;
 
-import com.opentable.db.postgres.embedded.EmbeddedPostgres;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.service.ServiceRegistry;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import ru.hh.school.TestHelper;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import ru.hh.school.users.resume.Resume;
 import ru.hh.school.users.resume.ResumeDao;
 import ru.hh.school.users.resume.ResumeService;
-
-import java.io.IOException;
+import ru.hh.school.users.user.User;
 
 public class ResumeServiceTest {
 
     private static ResumeService resumeService;
-    private static EmbeddedPostgres embeddedPostgres = null;
+    private static ResumeDao resumeDao;
+    private static SessionFactory sessionFactory;
+    private static final PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:latest")
+        .withDatabaseName("test")
+        .withUsername("test")
+        .withPassword("test")
+        .waitingFor(Wait.forListeningPort());
 
-    @BeforeClass
+    @BeforeAll
     public static void setUp() {
-        try {
-            embeddedPostgres = EmbeddedPostgres.builder()
-                    .setPort(5433)
-                    .start();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        SessionFactory sessionFactory = createSessionFactory();
+        postgreSQLContainer.start();
+        sessionFactory = createSessionFactory();
+        resumeDao = new ResumeDao(sessionFactory);
 
         resumeService = new ResumeService(
-                sessionFactory,
-                new ResumeDao(sessionFactory)
+            sessionFactory,
+            resumeDao
         );
-
-        if (embeddedPostgres != null) {
-            TestHelper.executeScript(embeddedPostgres.getPostgresDatabase(), "create_resume.sql");
-        }
     }
 
-    @AfterClass
+    @AfterAll
     public static void shutdown() {
-        try {
-            embeddedPostgres.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        postgreSQLContainer.close();
+    }
+
+
+    @BeforeEach
+    public void cleanUpDb() {
+        resumeService.deleteAll();
     }
 
 
     private static SessionFactory createSessionFactory() {
         ServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder()
-                .loadProperties("hibernate.properties")
-                .build();
+            .loadProperties("hibernate.properties")
+            .applySetting("hibernate.connection.url", postgreSQLContainer.getJdbcUrl())
+            .applySetting("hibernate.connection.username", postgreSQLContainer.getUsername())
+            .applySetting("hibernate.connection.password", postgreSQLContainer.getPassword())
+            .build();
 
         Metadata metadata = new MetadataSources(serviceRegistry)
-                .addAnnotatedClass(Resume.class)
-                .buildMetadata();
+            .addAnnotatedClass(Resume.class)
+            .addAnnotatedClass(User.class)
+            .buildMetadata();
 
         return metadata.buildSessionFactory();
     }
@@ -79,7 +81,7 @@ public class ResumeServiceTest {
     // тест достаю юзера и с ним все резюмехи идут пачкой тк джоин фетч
 
     @Test
-    public void saveNewResumeShouldInsertDbRow() {
+    void saveNewResumeShouldInsertDbRow() {
 //        Resume resume = new Resume();
 //        resume.setUserId(1);
 //        resume.setDescription("description");
@@ -91,27 +93,27 @@ public class ResumeServiceTest {
     }
 
     @Test
-    public void shouldGetOnlyActiveResunesForUser() {
-//        Resume resume1 = new Resume();
+    public void shouldGetOnlyActiveResumesForUser() {
+        Resume resume1 = new Resume();
 //        resume1.setUserId(1);
-//        resume1.setActive(true);
-//        resume1.setDescription("its me!");
-//        resumeService.saveNew(resume1);
-//
-//        Resume resume2 = new Resume();
+        resume1.setActive(true);
+        resume1.setDescription("its me!");
+        resumeService.saveNew(resume1);
+
+        Resume resume2 = new Resume();
 //        resume2.setUserId(1);
-//        resume2.setActive(false);
-//        resume2.setDescription("im not active");
-//        resumeService.saveNew(resume2);
-//
-//        Resume resume3 = new Resume();
+        resume2.setActive(false);
+        resume2.setDescription("im not active");
+        resumeService.saveNew(resume2);
+
+        Resume resume3 = new Resume();
 //        resume3.setUserId(2);
-//        resume2.setActive(true);
-//        resume1.setDescription("im for another user");
-//        resumeService.saveNew(resume3);
-//
+        resume2.setActive(true);
+        resume1.setDescription("im for another user");
+        resumeService.saveNew(resume3);
+
 //        Set<Resume> activeResumesForUserId = resumeService.getActiveResumesForUserId(1);
-//
+
 //        assertEquals(1, activeResumesForUserId.size());
 //        assertTrue(activeResumesForUserId.stream().anyMatch(r -> r.getDescription().equals("its me!")));
     }

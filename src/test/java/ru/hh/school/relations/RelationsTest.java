@@ -1,16 +1,21 @@
 package ru.hh.school.relations;
 
-import com.opentable.db.postgres.embedded.EmbeddedPostgres;
 import org.hibernate.LazyInitializationException;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.service.ServiceRegistry;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import ru.hh.school.TestHelper;
 import ru.hh.school.users.TransactionHelper;
 import ru.hh.school.users.resume.Resume;
@@ -20,10 +25,7 @@ import ru.hh.school.users.user.User;
 import ru.hh.school.users.user.UserDao;
 import ru.hh.school.users.user.UserService;
 
-import java.io.IOException;
 import java.util.Set;
-
-import static org.junit.Assert.assertFalse;
 
 public class RelationsTest {
 
@@ -34,58 +36,45 @@ public class RelationsTest {
   private static SessionFactory sessionFactory;
   private static TransactionHelper th;
 
-  private static EmbeddedPostgres embeddedPostgres = null;
+  private static final PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:latest")
+      .withDatabaseName("test")
+      .withUsername("test")
+      .withPassword("test")
+      .waitingFor(Wait.forListeningPort());
 
-  @BeforeClass
+  @BeforeAll
   public static void setUp() {
-    try {
-      embeddedPostgres = EmbeddedPostgres.builder()
-          .setPort(5433)
-          .start();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-    SessionFactory sessionFactory = createSessionFactory();
-
-    RelationsTest.sessionFactory = sessionFactory;
+    postgreSQLContainer.start();
+    sessionFactory = createSessionFactory();
     resumeDao = new ResumeDao(sessionFactory);
     userDao = new UserDao(sessionFactory);
-    th = new TransactionHelper(sessionFactory);
+
     resumeService = new ResumeService(sessionFactory, resumeDao);
     userService = new UserService(sessionFactory, userDao);
-
-    if (embeddedPostgres != null) {
-      TestHelper.executeScript(embeddedPostgres.getPostgresDatabase(), "create_resume.sql");
-      TestHelper.executeScript(embeddedPostgres.getPostgresDatabase(), "create_hhuser.sql");
-    }
+    th = new TransactionHelper(sessionFactory);
   }
 
-  @AfterClass
+  @AfterAll
   public static void shutdown() {
-    try {
-      embeddedPostgres.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+    postgreSQLContainer.close();
   }
 
-  @Before
+  @BeforeEach
   public void cleanUpDb() {
     userService.deleteAll();
     resumeService.deleteAll();
   }
 
   public void insert_users() {
-    TestHelper.executeScript(embeddedPostgres.getPostgresDatabase(), "insert_hhusers.sql");
+    TestHelper.executeScript(sessionFactory, "insert_hhusers.sql");
   }
 
   public void insert_resumes() {
-    TestHelper.executeScript(embeddedPostgres.getPostgresDatabase(), "insert_resumes.sql");
+    TestHelper.executeScript(sessionFactory, "insert_resumes.sql");
   }
 
   @Test
-  public void saveResumeForUser() {
+  void saveResumeForUser() {
     insert_users();
 
     User user = userService.getAll().stream().findFirst().get();
@@ -111,17 +100,18 @@ public class RelationsTest {
 //    );
   }
 
-  @Test(expected = LazyInitializationException.class)
-  public void getResumeWithDifferentFetchType() {
+  @Test
+  void getResumeWithDifferentFetchType() {
     insert_users();
     insert_resumes();
 
     Resume resumeFromDb = resumeService.getBy(1).get();
-    resumeFromDb.getUser().getFirstName();
+    assertThrows(LazyInitializationException.class, () -> resumeFromDb.getUser().getFirstName());
+    assertEquals(1, resumeFromDb.getUser().getId());
   }
 
   @Test
-  public void getResumeFetchUser() {
+  void getResumeFetchUser() {
     insert_users();
     insert_resumes();
 
@@ -130,7 +120,7 @@ public class RelationsTest {
   }
 
   @Test
-  public void getResumeWithoutUserFetchLazy() {
+  void getResumeWithoutUserFetchLazy() {
     insert_users();
     insert_resumes();
 
@@ -170,11 +160,14 @@ public class RelationsTest {
   private static SessionFactory createSessionFactory() {
     ServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder()
         .loadProperties("hibernate.properties")
+        .applySetting("hibernate.connection.url", postgreSQLContainer.getJdbcUrl())
+        .applySetting("hibernate.connection.username", postgreSQLContainer.getUsername())
+        .applySetting("hibernate.connection.password", postgreSQLContainer.getPassword())
         .build();
 
     Metadata metadata = new MetadataSources(serviceRegistry)
-        .addAnnotatedClass(Resume.class)
         .addAnnotatedClass(User.class)
+        .addAnnotatedClass(Resume.class)
         .buildMetadata();
 
     return metadata.buildSessionFactory();

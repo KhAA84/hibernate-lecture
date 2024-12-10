@@ -1,14 +1,12 @@
 package ru.hh.school;
 
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Arrays;
 import java.util.stream.Stream;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 
 public class TestHelper {
   private static final Path SCRIPTS_DIR = Path.of("src","main", "resources", "scripts");
@@ -16,17 +14,16 @@ public class TestHelper {
   /**
    * Файл должен лежать в resources/scripts
    */
-  public static void executeScript(DataSource dataSource, String scriptFileName) {
+
+  public static void executeScript(SessionFactory sessionFactory, String scriptFileName) {
     splitToQueries(SCRIPTS_DIR.resolve(scriptFileName))
-        .forEach((query) -> execute(dataSource, query));
+        .forEach((query) -> execute(sessionFactory, query));
   }
 
-  public static void execute(DataSource dataSource, String query) {
-    try (Connection connection = dataSource.getConnection();
-         Statement statement = connection.createStatement()) {
-      statement.executeUpdate(query);
-    } catch (SQLException e) {
-      throw new RuntimeException("Can't execute query " + query, e);
+  public static void execute(SessionFactory sessionFactory, String query) {
+    try (Session session = sessionFactory.openSession()) {
+      session.beginTransaction();
+      session.createNativeMutationQuery(query).executeUpdate();
     }
   }
 
@@ -37,6 +34,5 @@ public class TestHelper {
       throw new RuntimeException("Can't read file " + path, e);
     }
   }
-
 
 }
