@@ -64,7 +64,8 @@ public class UserServiceTest {
     Metadata metadata = new MetadataSources(serviceRegistry)
         // add class
         .addAnnotatedClass(User.class)
-//        .addAnnotatedClass(Resume.class)
+        // добавляем Resume, потому что уже есть связь на них в User
+        .addAnnotatedClass(Resume.class)
         .buildMetadata();
 
     return metadata.buildSessionFactory();
@@ -81,7 +82,7 @@ public class UserServiceTest {
   }
 
   @Test
-  void getAllUsersShouldReturnEmptySet() {
+  void getAllUsersShouldReturnAllUsers() {
     insert_users();
     final Set<User> all = userService.getAll();
     assertEquals(2, all.size());

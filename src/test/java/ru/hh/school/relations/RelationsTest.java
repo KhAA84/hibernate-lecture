@@ -86,18 +86,18 @@ public class RelationsTest {
     resumeService.saveNew(resume2);
 
     // todo get user, fetch resumes
-//    User userWithResumes = th.inTransaction(() -> userDao.getUserByIdWithResumes(user.getId()));
-//
-//    assertEquals(2, userWithResumes.getResumes().size());
-//    assertTrue(
-//        userWithResumes.getResumes().stream()
-//            .anyMatch(resume -> resume.getDescription().equals("Java Dev"))
-//    );
-//
-//    assertTrue(
-//        userWithResumes.getResumes().stream()
-//            .anyMatch(resume -> resume.getDescription().equals("Python Dev"))
-//    );
+    User userWithResumes = th.inTransaction(() -> userDao.getUserByIdWithResumes(user.getId()));
+
+    assertEquals(2, userWithResumes.getResumes().size());
+    assertTrue(
+        userWithResumes.getResumes().stream()
+            .anyMatch(resume -> resume.getDescription().equals("Java Dev"))
+    );
+
+    assertTrue(
+        userWithResumes.getResumes().stream()
+            .anyMatch(resume -> resume.getDescription().equals("Python Dev"))
+    );
   }
 
   @Test

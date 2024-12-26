@@ -17,7 +17,9 @@ public class UserDao {
 
   public Set<User> getAll() {
     //TODO: implement
-    return null;
+    return session().createQuery("from User", User.class)
+        .stream()
+        .collect(Collectors.toSet());
   }
 
   //region already implemented methods
@@ -25,7 +27,7 @@ public class UserDao {
   public void saveNew(User user) {
     session().persist(user);
     // или session().merge()
-    // save вставляет новую строчку в БД, даже если у user уже есть id
+    // вставляет новую строчку в БД, даже если у user уже есть id
     // persist при этом бросает исключение
   }
 
@@ -50,13 +52,13 @@ public class UserDao {
   }
 
   //region relations demo (
-//  public User getUserByIdWithResumes(int id) {
-//    return session().createQuery(
-//        "select u from User u join fetch u.resumes where u.id=:id"
-//            , User.class)
-//        .setParameter("id", id)
-//        .uniqueResult();
-//  }
+  public User getUserByIdWithResumes(int id) {
+    return session().createQuery(
+        "select u from User u join fetch u.resumes where u.id=:id"
+            , User.class)
+        .setParameter("id", id)
+        .uniqueResult();
+  }
   //endregion
 
   //endregion

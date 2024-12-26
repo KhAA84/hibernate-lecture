@@ -12,24 +12,41 @@ import java.util.Objects;
 import java.util.Set;
 import ru.hh.school.users.resume.Resume;
 
-// ToDo: оформить entity
+@Entity
+@Table(name = "hhuser")
 public class User {
 
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "user_id")
   private Integer id;
 
+  @Column(name = "first_name")
   private String firstName;
 
+  @Column(name = "last_name")
   private String lastName;
 
   //region relations(это потом)
 
-  //  @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
-  //  private Set<Resume> resumes;
-  // // сгенерировать сеттеры и геттеры
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
+    private Set<Resume> resumes;
+   // сгенерировать сеттеры и геттеры
+
+  public Set<Resume> getResumes() {
+    return resumes;
+  }
+
+  public void setResumes(Set<Resume> resumes) {
+    this.resumes = resumes;
+  }
 
   //endregion
 
   // ToDo: no-arg constructor
+
+  public User() {
+  }
 
   public User(String firstName, String lastName) {
     this.firstName = firstName;
