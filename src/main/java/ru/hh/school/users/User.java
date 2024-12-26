@@ -18,6 +18,24 @@ public class User {
     return new User(id, firstName, lastName);
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    User user = (User) o;
+    return Objects.equals(getId(), user.getId()) && Objects.equals(getFirstName(), user.getFirstName()) && Objects.equals(
+        getLastName(),
+        user.getLastName()
+    );
+  }
+
+  @Override
+  public int hashCode() {
+    return 0;
+  }
+
   public static User newUser(String firstName, String lastName) {
     return new User(null, firstName, lastName);
   }

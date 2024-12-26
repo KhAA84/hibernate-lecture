@@ -19,8 +19,24 @@ public class UserDao {
   }
 
   public Set<User> getAll() {
-    // todo: realisation
-    return Set.of();
+    try (Connection connection = dataSource.getConnection()) {
+      try (Statement statement = connection.createStatement();
+           ResultSet rs = statement.executeQuery("SELECT * FROM hhuser");) {
+        Set<User> users = new HashSet<>();
+        while (rs.next()) {
+          users.add(
+              User.existing(
+                  rs.getInt("user_id"),
+                  rs.getString("first_name"),
+                  rs.getString("last_name")
+              )
+          );
+        }
+        return users;
+      }
+    } catch (SQLException e) {
+      throw new RuntimeException("Couldn't get users", e);
+    }
   }
 
   public void saveNew(User user) {
